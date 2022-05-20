@@ -1,0 +1,20 @@
+{
+  "name": "slack-thermometry",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "start": "node --require dotenv/config build/app.js",
+    "dev": "ts-node-dev --require dotenv/config src/app.ts",
+    "build": "tsc"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@slack/bolt": "^3.11.1",
+    "dotenv": "^16.0.1",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.4"
+  },
+  "devDependencies": {
+    "ts-node-dev": "^1.1.8"
+  }
+}

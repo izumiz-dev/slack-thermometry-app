@@ -1,0 +1,7 @@
+# node / yarn
+node_modules/
+yarn-lock.json
+
+# ignore Environment Variable for slack token
+.env
+
