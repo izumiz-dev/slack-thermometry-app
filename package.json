@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "start": "node --require dotenv/config build/app.js",
+    "start": "nodemon build/app.js",
     "dev": "ts-node-dev --require dotenv/config src/app.ts",
     "build": "tsc"
   },
@@ -11,6 +11,7 @@
   "dependencies": {
     "@slack/bolt": "^3.11.1",
     "dotenv": "^16.0.1",
+    "nodemon": "^2.0.16",
     "ts-node": "^10.7.0",
     "typescript": "^4.6.4"
   },
