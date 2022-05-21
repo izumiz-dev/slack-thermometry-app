@@ -1,67 +1,76 @@
 import { App } from "@slack/bolt";
-
-let latestTimeStamp: string = "";
-let alreadySubmittedUsers: string[] = [];
+import { getNowDateTimeStr, getTodayStartTS } from "./getNowDateTimeStr";
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
-app.message("検温", async ({ say }) => {
-  alreadySubmittedUsers = []; // initialize
-  // https://neos21.net/blog/2020/12/09-01.html
-  const jstNow = new Date(
-    Date.now() + (new Date().getTimezoneOffset() + 9 * 60) * 60 * 1000
-  );
-
-  // https://catprogram.hatenablog.com/entry/2015/05/06/143753
-  const localeOptions = {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    weekday: "narrow",
-  };
-  const nowDateTime: string = jstNow.toLocaleDateString(
-    "ja-JP",
-    localeOptions as any
-  );
+app.message(/^検温$/, async ({ say }) => {
+  const nowDateTime = getNowDateTimeStr();
 
   const result = await say({
-    attachments: [
+    blocks: [
       {
-        fallback: "検温確認 体温が37.5℃以下であれば確認してください。",
-        color: "#32a852",
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: `検温確認: ${nowDateTime}\n体温が37.5℃以下であれば確認してください。`,
-            },
-            accessory: {
-              type: "button",
-              style: "primary",
-              text: {
-                type: "plain_text",
-                text: "確認",
-                emoji: true,
-              },
-              action_id: "thermometry_ok",
-            },
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `検温確認: ${nowDateTime}\n体温が37.5℃以下であれば確認してください。`,
+        },
+        accessory: {
+          type: "button",
+          style: "primary",
+          text: {
+            type: "plain_text",
+            text: "確認",
+            emoji: true,
           },
-        ],
+          action_id: "thermometry_ok",
+        },
       },
     ],
   });
 
-  latestTimeStamp = result.ts || "";
+  await say({
+    text: `ts: ${result.ts}`,
+  });
 });
-
+// 確認ボタンが押されたとき
 app.action("thermometry_ok", async ({ body, ack, say }: any) => {
   await ack();
 
-  if (!alreadySubmittedUsers.includes(body.user.id)) {
+  let latestTimeStamp = "";
+
+  const history = await app.client.conversations.history({
+    channel: body.channel.id,
+    oldest: getTodayStartTS(),
+    limit: 50,
+  });
+
+  history.messages?.forEach((msg: any) => {
+    const regex = /^ts: \d{10}\.\d{6}$/;
+    if (regex.test(msg.text)) {
+      latestTimeStamp = msg.text.match(/^ts: \d{10}\.\d{6}$/);
+    }
+  });
+
+  const replies = await app.client.conversations.replies({
+    channel: body.channel.id,
+    ts: latestTimeStamp,
+  });
+
+  // 配列の先頭は不要なので削除
+  replies.messages?.shift();
+
+  const confirmedUserIds: string[] = [];
+  replies.messages?.forEach((msg: any) => {
+    const matched = msg.text.match(/(?<=<@).*?(?=>)/);
+    if (!!matched) {
+      confirmedUserIds.push(matched[0]);
+    }
+  });
+
+  if (!confirmedUserIds.includes(body.user.id)) {
     await say({
       fallback: "検温を確認しました。",
       text: `<@${body.user.id}>さんが確認しました`,
@@ -75,11 +84,12 @@ app.action("thermometry_ok", async ({ body, ack, say }: any) => {
       user: body.user.id,
     });
   }
-  alreadySubmittedUsers.push(body.user.id);
 });
 
 (async () => {
   await app.start(process.env.PORT || 3000);
 
-  console.log("⚡️ Bolt app is running!");
+  console.log(
+    `Slack thermometry is running! http://localhost:${process.env.PORT || 3000}`
+  );
 })();
