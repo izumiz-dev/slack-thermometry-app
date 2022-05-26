@@ -8,7 +8,7 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
-app.message("検温", async ({ say }) => {
+app.message(/^検温$/, async ({ say }) => {
   alreadySubmittedUsers = []; // initialize
   // https://neos21.net/blog/2020/12/09-01.html
   const jstNow = new Date(
