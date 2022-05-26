@@ -5,3 +5,6 @@ yarn-lock.json
 # ignore Environment Variable for slack token
 .env
 
+# ignore build item
+build/
+
